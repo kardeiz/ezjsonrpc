@@ -1,0 +1,22 @@
+[package]
+authors = ["Jacob Brown <kardeiz@gmail.com>"]
+edition = "2018"
+name = "ezjsonrpc"
+version = "0.1.0"
+
+[dependencies]
+futures = "0.1.25"
+proc-macro-hack = "0.5.4"
+serde = "1.0.84"
+serde_derive = "1.0.84"
+
+[dependencies.ezjsonrpc-macros]
+path = "../ezjsonrpc-macros"
+version = "0.1.0"
+
+[dependencies.serde_json]
+features = ["raw_value"]
+version = "1.0.35"
+
+[dev-dependencies]
+tokio = "0.1.14"
