@@ -1,0 +1,579 @@
+   Compiling ezjsonrpc v0.1.0 (/home/jacob/projects/ezjsonrpc/ezjsonrpc)
+error: custom attribute panicked
+  --> examples/simple.rs:42:1
+   |
+42 | #[jsonrpc_methods]
+   | ^^^^^^^^^^^^^^^^^^
+   |
+   = help: message: Impl(
+               ItemImpl {
+                   attrs: [],
+                   defaultness: None,
+                   unsafety: None,
+                   impl_token: Impl,
+                   generics: Generics {
+                       lt_token: Some(
+                           Lt
+                       ),
+                       params: [
+                           Type(
+                               TypeParam {
+                                   attrs: [],
+                                   ident: Ident {
+                                       ident: "T",
+                                       span: #0 bytes(916..917)
+                                   },
+                                   colon_token: None,
+                                   bounds: [],
+                                   eq_token: None,
+                                   default: None
+                               }
+                           )
+                       ],
+                       gt_token: Some(
+                           Gt
+                       ),
+                       where_clause: Some(
+                           WhereClause {
+                               where_token: Where,
+                               predicates: [
+                                   Type(
+                                       PredicateType {
+                                           lifetimes: None,
+                                           bounded_ty: Path(
+                                               TypePath {
+                                                   qself: None,
+                                                   path: Path {
+                                                       leading_colon: None,
+                                                       segments: [
+                                                           PathSegment {
+                                                               ident: Ident {
+                                                                   ident: "T",
+                                                                   span: #0 bytes(932..933)
+                                                               },
+                                                               arguments: None
+                                                           }
+                                                       ]
+                                                   }
+                                               }
+                                           ),
+                                           colon_token: Colon,
+                                           bounds: [
+                                               Trait(
+                                                   TraitBound {
+                                                       paren_token: None,
+                                                       modifier: None,
+                                                       lifetimes: None,
+                                                       path: Path {
+                                                           leading_colon: None,
+                                                           segments: [
+                                                               PathSegment {
+                                                                   ident: Ident {
+                                                                       ident: "Clone",
+                                                                       span: #0 bytes(935..940)
+                                                                   },
+                                                                   arguments: None
+                                                               }
+                                                           ]
+                                                       }
+                                                   }
+                                               )
+                                           ]
+                                       }
+                                   )
+                               ]
+                           }
+                       )
+                   },
+                   trait_: None,
+                   self_ty: Path(
+                       TypePath {
+                           qself: None,
+                           path: Path {
+                               leading_colon: None,
+                               segments: [
+                                   PathSegment {
+                                       ident: Ident {
+                                           ident: "Foo",
+                                           span: #0 bytes(919..922)
+                                       },
+                                       arguments: AngleBracketed(
+                                           AngleBracketedGenericArguments {
+                                               colon2_token: None,
+                                               lt_token: Lt,
+                                               args: [
+                                                   Type(
+                                                       Path(
+                                                           TypePath {
+                                                               qself: None,
+                                                               path: Path {
+                                                                   leading_colon: None,
+                                                                   segments: [
+                                                                       PathSegment {
+                                                                           ident: Ident {
+                                                                               ident: "T",
+                                                                               span: #0 bytes(923..924)
+                                                                           },
+                                                                           arguments: None
+                                                                       }
+                                                                   ]
+                                                               }
+                                                           }
+                                                       )
+                                                   )
+                                               ],
+                                               gt_token: Gt
+                                           }
+                                       )
+                                   }
+                               ]
+                           }
+                       }
+                   ),
+                   brace_token: Brace,
+                   items: [
+                       Method(
+                           ImplItemMethod {
+                               attrs: [
+                                   Attribute {
+                                       pound_token: Pound,
+                                       style: Outer,
+                                       bracket_token: Bracket,
+                                       path: Path {
+                                           leading_colon: None,
+                                           segments: [
+                                               PathSegment {
+                                                   ident: Ident {
+                                                       ident: "jsonrpc",
+                                                       span: #0 bytes(949..956)
+                                                   },
+                                                   arguments: None
+                                               }
+                                           ]
+                                       },
+                                       tts: TokenStream [
+                                           Group {
+                                               delimiter: Parenthesis,
+                                               stream: TokenStream [
+                                                   Ident {
+                                                       ident: "rename",
+                                                       span: #0 bytes(957..963)
+                                                   },
+                                                   Punct {
+                                                       ch: '=',
+                                                       spacing: Alone,
+                                                       span: #0 bytes(963..964)
+                                                   },
+                                                   Literal {
+                                                       lit: Str_(
+                                                           adde
+                                                       ),
+                                                       suffix: None,
+                                                       span: #0 bytes(964..970)
+                                                   },
+                                                   Punct {
+                                                       ch: ',',
+                                                       spacing: Alone,
+                                                       span: #0 bytes(970..971)
+                                                   },
+                                                   Ident {
+                                                       ident: "rename_args",
+                                                       span: #0 bytes(972..983)
+                                                   },
+                                                   Group {
+                                                       delimiter: Parenthesis,
+                                                       stream: TokenStream [
+                                                           Ident {
+                                                               ident: "x",
+                                                               span: #0 bytes(984..985)
+                                                           },
+                                                           Punct {
+                                                               ch: '=',
+                                                               spacing: Alone,
+                                                               span: #0 bytes(985..986)
+                                                           },
+                                                           Literal {
+                                                               lit: Str_(
+                                                                   x.x
+                                                               ),
+                                                               suffix: None,
+                                                               span: #0 bytes(986..991)
+                                                           },
+                                                           Punct {
+                                                               ch: ',',
+                                                               spacing: Alone,
+                                                               span: #0 bytes(991..992)
+                                                           },
+                                                           Ident {
+                                                               ident: "y",
+                                                               span: #0 bytes(993..994)
+                                                           },
+                                                           Punct {
+                                                               ch: '=',
+                                                               spacing: Alone,
+                                                               span: #0 bytes(994..995)
+                                                           },
+                                                           Literal {
+                                                               lit: Str_(
+                                                                   y.y
+                                                               ),
+                                                               suffix: None,
+                                                               span: #0 bytes(995..1000)
+                                                           }
+                                                       ],
+                                                       span: #0 bytes(983..1001)
+                                                   }
+                                               ],
+                                               span: #0 bytes(956..1002)
+                                           }
+                                       ]
+                                   }
+                               ],
+                               vis: Inherited,
+                               defaultness: None,
+                               sig: MethodSig {
+                                   constness: None,
+                                   unsafety: None,
+                                   asyncness: None,
+                                   abi: None,
+                                   ident: Ident {
+                                       ident: "add",
+                                       span: #0 bytes(1011..1014)
+                                   },
+                                   decl: FnDecl {
+                                       fn_token: Fn,
+                                       generics: Generics {
+                                           lt_token: None,
+                                           params: [],
+                                           gt_token: None,
+                                           where_clause: None
+                                       },
+                                       paren_token: Paren,
+                                       inputs: [
+                                           SelfRef(
+                                               ArgSelfRef {
+                                                   and_token: And,
+                                                   lifetime: None,
+                                                   mutability: None,
+                                                   self_token: SelfValue
+                                               }
+                                           ),
+                                           Comma,
+                                           Captured(
+                                               ArgCaptured {
+                                                   pat: Ident(
+                                                       PatIdent {
+                                                           by_ref: None,
+                                                           mutability: None,
+                                                           ident: Ident {
+                                                               ident: "x",
+                                                               span: #0 bytes(1022..1023)
+                                                           },
+                                                           subpat: None
+                                                       }
+                                                   ),
+                                                   colon_token: Colon,
+                                                   ty: Path(
+                                                       TypePath {
+                                                           qself: None,
+                                                           path: Path {
+                                                               leading_colon: None,
+                                                               segments: [
+                                                                   PathSegment {
+                                                                       ident: Ident {
+                                                                           ident: "u32",
+                                                                           span: #0 bytes(1025..1028)
+                                                                       },
+                                                                       arguments: None
+                                                                   }
+                                                               ]
+                                                           }
+                                                       }
+                                                   )
+                                               }
+                                           ),
+                                           Comma,
+                                           Captured(
+                                               ArgCaptured {
+                                                   pat: Ident(
+                                                       PatIdent {
+                                                           by_ref: None,
+                                                           mutability: None,
+                                                           ident: Ident {
+                                                               ident: "y",
+                                                               span: #0 bytes(1030..1031)
+                                                           },
+                                                           subpat: None
+                                                       }
+                                                   ),
+                                                   colon_token: Colon,
+                                                   ty: Path(
+                                                       TypePath {
+                                                           qself: None,
+                                                           path: Path {
+                                                               leading_colon: None,
+                                                               segments: [
+                                                                   PathSegment {
+                                                                       ident: Ident {
+                                                                           ident: "u32",
+                                                                           span: #0 bytes(1033..1036)
+                                                                       },
+                                                                       arguments: None
+                                                                   }
+                                                               ]
+                                                           }
+                                                       }
+                                                   )
+                                               }
+                                           )
+                                       ],
+                                       variadic: None,
+                                       output: Type(
+                                           RArrow,
+                                           Path(
+                                               TypePath {
+                                                   qself: None,
+                                                   path: Path {
+                                                       leading_colon: None,
+                                                       segments: [
+                                                           PathSegment {
+                                                               ident: Ident {
+                                                                   ident: "Result",
+                                                                   span: #0 bytes(1041..1047)
+                                                               },
+                                                               arguments: AngleBracketed(
+                                                                   AngleBracketedGenericArguments {
+                                                                       colon2_token: None,
+                                                                       lt_token: Lt,
+                                                                       args: [
+                                                                           Type(
+                                                                               Path(
+                                                                                   TypePath {
+                                                                                       qself: None,
+                                                                                       path: Path {
+                                                                                           leading_colon: None,
+                                                                                           segments: [
+                                                                                               PathSegment {
+                                                                                                   ident: Ident {
+                                                                                                       ident: "u32",
+                                                                                                       span: #0 bytes(1048..1051)
+                                                                                                   },
+                                                                                                   arguments: None
+                                                                                               }
+                                                                                           ]
+                                                                                       }
+                                                                                   }
+                                                                               )
+                                                                           ),
+                                                                           Comma,
+                                                                           Type(
+                                                                               Path(
+                                                                                   TypePath {
+                                                                                       qself: None,
+                                                                                       path: Path {
+                                                                                           leading_colon: None,
+                                                                                           segments: [
+                                                                                               PathSegment {
+                                                                                                   ident: Ident {
+                                                                                                       ident: "Box",
+                                                                                                       span: #0 bytes(1053..1056)
+                                                                                                   },
+                                                                                                   arguments: AngleBracketed(
+                                                                                                       AngleBracketedGenericArguments {
+                                                                                                           colon2_token: None,
+                                                                                                           lt_token: Lt,
+                                                                                                           args: [
+                                                                                                               Type(
+                                                                                                                   TraitObject(
+                                                                                                                       TypeTraitObject {
+                                                                                                                           dyn_token: None,
+                                                                                                                           bounds: [
+                                                                                                                               Trait(
+                                                                                                                                   TraitBound {
+                                                                                                                                       paren_token: None,
+                                                                                                                                       modifier: None,
+                                                                                                                                       lifetimes: None,
+                                                                                                                                       path: Path {
+                                                                                                                                           leading_colon: None,
+                                                                                                                                           segments: [
+                                                                                                                                               PathSegment {
+                                                                                                                                                   ident: Ident {
+                                                                                                                                                       ident: "std",
+                                                                                                                                                       span: #0 bytes(1057..1060)
+                                                                                                                                                   },
+                                                                                                                                                   arguments: None
+                                                                                                                                               },
+                                                                                                                                               Colon2,
+                                                                                                                                               PathSegment {
+                                                                                                                                                   ident: Ident {
+                                                                                                                                                       ident: "error",
+                                                                                                                                                       span: #0 bytes(1062..1067)
+                                                                                                                                                   },
+                                                                                                                                                   arguments: None
+                                                                                                                                               },
+                                                                                                                                               Colon2,
+                                                                                                                                               PathSegment {
+                                                                                                                                                   ident: Ident {
+                                                                                                                                                       ident: "Error",
+                                                                                                                                                       span: #0 bytes(1069..1074)
+                                                                                                                                                   },
+                                                                                                                                                   arguments: None
+                                                                                                                                               }
+                                                                                                                                           ]
+                                                                                                                                       }
+                                                                                                                                   }
+                                                                                                                               ),
+                                                                                                                               Add,
+                                                                                                                               Trait(
+                                                                                                                                   TraitBound {
+                                                                                                                                       paren_token: None,
+                                                                                                                                       modifier: None,
+                                                                                                                                       lifetimes: None,
+                                                                                                                                       path: Path {
+                                                                                                                                           leading_colon: None,
+                                                                                                                                           segments: [
+                                                                                                                                               PathSegment {
+                                                                                                                                                   ident: Ident {
+                                                                                                                                                       ident: "Send",
+                                                                                                                                                       span: #0 bytes(1077..1081)
+                                                                                                                                                   },
+                                                                                                                                                   arguments: None
+                                                                                                                                               }
+                                                                                                                                           ]
+                                                                                                                                       }
+                                                                                                                                   }
+                                                                                                                               ),
+                                                                                                                               Add,
+                                                                                                                               Trait(
+                                                                                                                                   TraitBound {
+                                                                                                                                       paren_token: None,
+                                                                                                                                       modifier: None,
+                                                                                                                                       lifetimes: None,
+                                                                                                                                       path: Path {
+                                                                                                                                           leading_colon: None,
+                                                                                                                                           segments: [
+                                                                                                                                               PathSegment {
+                                                                                                                                                   ident: Ident {
+                                                                                                                                                       ident: "Sync",
+                                                                                                                                                       span: #0 bytes(1084..1088)
+                                                                                                                                                   },
+                                                                                                                                                   arguments: None
+                                                                                                                                               }
+                                                                                                                                           ]
+                                                                                                                                       }
+                                                                                                                                   }
+                                                                                                                               )
+                                                                                                                           ]
+                                                                                                                       }
+                                                                                                                   )
+                                                                                                               )
+                                                                                                           ],
+                                                                                                           gt_token: Gt
+                                                                                                       }
+                                                                                                   )
+                                                                                               }
+                                                                                           ]
+                                                                                       }
+                                                                                   }
+                                                                               )
+                                                                           )
+                                                                       ],
+                                                                       gt_token: Gt
+                                                                   }
+                                                               )
+                                                           }
+                                                       ]
+                                                   }
+                                               }
+                                           )
+                                       )
+                                   }
+                               },
+                               block: Block {
+                                   brace_token: Brace,
+                                   stmts: [
+                                       Expr(
+                                           Call(
+                                               ExprCall {
+                                                   attrs: [],
+                                                   func: Path(
+                                                       ExprPath {
+                                                           attrs: [],
+                                                           qself: None,
+                                                           path: Path {
+                                                               leading_colon: None,
+                                                               segments: [
+                                                                   PathSegment {
+                                                                       ident: Ident {
+                                                                           ident: "Ok",
+                                                                           span: #0 bytes(1093..1095)
+                                                                       },
+                                                                       arguments: None
+                                                                   }
+                                                               ]
+                                                           }
+                                                       }
+                                                   ),
+                                                   paren_token: Paren,
+                                                   args: [
+                                                       Binary(
+                                                           ExprBinary {
+                                                               attrs: [],
+                                                               left: Path(
+                                                                   ExprPath {
+                                                                       attrs: [],
+                                                                       qself: None,
+                                                                       path: Path {
+                                                                           leading_colon: None,
+                                                                           segments: [
+                                                                               PathSegment {
+                                                                                   ident: Ident {
+                                                                                       ident: "x",
+                                                                                       span: #0 bytes(1096..1097)
+                                                                                   },
+                                                                                   arguments: None
+                                                                               }
+                                                                           ]
+                                                                       }
+                                                                   }
+                                                               ),
+                                                               op: Add(
+                                                                   Add
+                                                               ),
+                                                               right: Path(
+                                                                   ExprPath {
+                                                                       attrs: [],
+                                                                       qself: None,
+                                                                       path: Path {
+                                                                           leading_colon: None,
+                                                                           segments: [
+                                                                               PathSegment {
+                                                                                   ident: Ident {
+                                                                                       ident: "y",
+                                                                                       span: #0 bytes(1100..1101)
+                                                                                   },
+                                                                                   arguments: None
+                                                                               }
+                                                                           ]
+                                                                       }
+                                                                   }
+                                                               )
+                                                           }
+                                                       )
+                                                   ]
+                                               }
+                                           )
+                                       )
+                                   ]
+                               }
+                           }
+                       )
+                   ]
+               }
+           )
+
+error: aborting due to previous error
+
+error: Could not compile `ezjsonrpc`.
+
+To learn more, run the command again with --verbose.
