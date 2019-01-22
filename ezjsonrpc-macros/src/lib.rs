@@ -7,132 +7,129 @@ use proc_macro2::Span;
 use proc_macro_hack::proc_macro_hack;
 use quote::quote;
 
-use heck::*;
 use syn::*;
 
 #[proc_macro_attribute]
-pub fn jsonrpc_methods(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    let mut item_impl = parse_macro_input!(item as ItemImpl);
+pub fn jsonrpc_method(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    
+    let method = parse_macro_input!(item as ImplItemMethod);
 
-    if item_impl.trait_.is_some() {
-        panic!("Must not be implementing some trait");
+    let attrs = parse_macro_input!(attrs as AttributeArgs);
+
+    let params = &method
+        .sig
+        .decl
+        .inputs
+        .iter()
+        .filter_map(|x| match *x {
+            FnArg::Captured(ref y) => Some(y),
+            _ => None
+        })
+        .filter_map(|x| match x.pat {
+            Pat::Ident(ref y) => Some(y),
+            _ => None
+        })
+        .map(|x| &x.ident)
+        .collect::<Vec<_>>();
+
+    let params_fn_name = Ident::new(
+        &format!(
+            "jsonrpc_params_for_{}",
+            method.sig.ident.to_string().trim_left_matches("r#").to_owned()
+        ),
+        Span::call_site()
+    );
+
+    let item_fn_ident = &method.sig.ident;
+
+    let mut item_fn_ident_s = item_fn_ident.to_string();
+
+    if let Some(rename) = attrs.iter()
+        .filter_map(|x| match x { NestedMeta::Meta(y) => Some(y), _ => None })
+        .filter_map(|x| match x { Meta::NameValue(y) => Some(y), _ => None })
+        .find(|x| x.ident == "rename" )
+        .and_then(|x| match x.lit { Lit::Str(ref y) => Some(y), _ => None }) {
+        item_fn_ident_s = rename.value();
     }
 
-    let dummy_const = if let &Type::Path(ref tp) = item_impl.self_ty.as_ref() {
-        let name =
-            tp.path.segments.last().unwrap().value().ident.to_string().to_shouty_snake_case();
-        Ident::new(&format!("_IMPL_JSONRPC_CALLS_FOR_{}", name), Span::call_site())
-    } else {
-        panic!("Couldn't derive name");
-    };
+    let mut mappings = attrs.iter()
+        .filter_map(|x| match x { NestedMeta::Meta(y) => Some(y), _ => None })
+        .filter_map(|x| match x { Meta::List(y) => Some(y), _ => None })
+        .filter(|x| x.ident == "rename_args" )
+        .flat_map(|x| x.nested.iter() )
+        .filter_map(|x| match x { NestedMeta::Meta(y) => Some(y), _ => None })
+        .filter_map(|x| match x { Meta::NameValue(y) => Some(y), _ => None })
+        .filter_map(|x| match x.lit { Lit::Str(ref y) => Some((x.ident.to_string(), y.value())), _ => None })
+        .collect::<std::collections::HashMap<String, String>>();
+    
+    let param_names = &params.iter().map(|id| {
+        let name = id.to_string();
+        mappings.remove(&name).unwrap_or_else(|| name)
+    }).collect::<Vec<_>>();
 
-    let mut new_methods = Vec::new();
+    let extract_positional = extract_positional(param_names.len());
+    let extract_named = extract_named(param_names.len());
 
-    for method in item_impl.items.iter_mut().filter_map(|x| match *x {
-        ImplItem::Method(ref mut y) => Some(y),
-        _ => None
-    }) {
-        let to_match: Path = parse_quote!(jsonrpc);
+    let params_fn: ImplItemMethod = {
+        if param_names.len() == 0 {
+            parse_quote!{
+                pub fn #params_fn_name() -> (&'static str, Box<std::any::Any>, std::marker::PhantomData<Self>) {
+                    extern crate ezjsonrpc as _ezjsonrpc;
+                    let rt = |state: &Self, params: Option<_ezjsonrpc::exp::serde_json::Value>| {
+                        if params.as_ref()
+                            .map(|x| x.as_object().map(|y| !y.is_empty()).unwrap_or(false) ||
+                                x.as_array().map(|y| !y.is_empty()).unwrap_or(false) )
+                            .unwrap_or(false) {
+                            Err(_ezjsonrpc::Error::invalid_params())
+                        } else {
+                            Ok(Self::#item_fn_ident(state))
+                        }
+                    };
 
-        let (jsonrpc_attrs, preserved_attrs): (Vec<Attribute>, Vec<Attribute>) =
-            method.attrs.drain(..).partition(|x| x.path == to_match);
+                    let boxed_method = _ezjsonrpc::BoxedMethod::from(rt);
 
-        method.attrs = preserved_attrs;
-
-        let params = &method
-            .sig
-            .decl
-            .inputs
-            .iter()
-            .filter_map(|x| match *x {
-                FnArg::Captured(ref y) => Some(y),
-                _ => None
-            })
-            .filter_map(|x| match x.pat {
-                Pat::Ident(ref y) => Some(y),
-                _ => None
-            })
-            .map(|x| &x.ident)
-            .collect::<Vec<_>>();
-
-        let wrapped_fn_name = Ident::new(
-            &format!(
-                "jsonrpc_call_{}",
-                method.sig.ident.to_string().trim_left_matches("r#").to_owned()
-            ),
-            Span::call_site()
-        );
-
-        let item_fn_ident = &method.sig.ident;
-        let item_fn_ident_s = &item_fn_ident.to_string();
-
-        let param_names = &params.iter().map(|x| x.to_string()).collect::<Vec<_>>();
-
-        let extract_positional = extract_positional(param_names.len());
-
-        let extract_named = extract_named(param_names.len());
-
-        let out: ImplItem = {
-            if param_names.len() == 0 {
-                parse_quote!{
-                    pub fn #wrapped_fn_name() -> (&'static str, Box<_ezjsonrpc::Method<Self>>) {
-                        let rt = |state: &Self, params: Option<_ezjsonrpc::exp::serde_json::Value>| {
-                            if params.as_ref()
-                                .map(|x| x.as_object().map(|y| !y.is_empty()).unwrap_or(false) ||
-                                    x.as_array().map(|y| !y.is_empty()).unwrap_or(false) )
-                                .unwrap_or(false) {
-                                Err(_ezjsonrpc::Error::invalid_method_parameters())
-                            } else {
-                                Ok(Self::#item_fn_ident(state))
-                            }
-                        };
-                        (#item_fn_ident_s, rt.into())
-                    }
-                }
-            } else {
-                parse_quote!{
-                    pub fn #wrapped_fn_name() -> (&'static str, Box<_ezjsonrpc::Method<Self>>) {
-                        let rt = |state: &Self, params: Option<_ezjsonrpc::exp::serde_json::Value>| {
-                            match params {
-                                Some(_ezjsonrpc::exp::serde_json::Value::Object(map)) => {
-                                    #extract_named
-                                    if let Ok((#(#params),*)) = extract(map, #(#param_names),*) {
-                                        return Ok(Self::#item_fn_ident(state, #(#params),*));
-                                    }
-                                },
-                                Some(_ezjsonrpc::exp::serde_json::Value::Array(vals)) => {
-                                    #extract_positional
-                                    if let Ok((#(#params),*)) = extract(vals) {
-                                        return Ok(Self::#item_fn_ident(state, #(#params),*));
-                                    }
-                                },
-                                _ => {}
-                            }
-                            return Err(_ezjsonrpc::Error::invalid_method_parameters());
-                        };
-                        (#item_fn_ident_s, rt.into())
-                    }
+                    (#item_fn_ident_s, Box::new(boxed_method) as Box<std::any::Any>, std::marker::PhantomData::<Self>)
                 }
             }
-        };
+        } else {
+            parse_quote!{
+                pub fn #params_fn_name() -> (&'static str, Box<std::any::Any>, std::marker::PhantomData<Self>) {
+                    extern crate ezjsonrpc as _ezjsonrpc;
+                    let rt = |state: &Self, params: Option<_ezjsonrpc::exp::serde_json::Value>| {
+                        match params {
+                            Some(_ezjsonrpc::exp::serde_json::Value::Object(map)) => {
+                                #extract_named
+                                if let Ok((#(#params),*)) = extract(map, #(#param_names),*) {
+                                    return Ok(Self::#item_fn_ident(state, #(#params),*));
+                                }
+                            },
+                            Some(_ezjsonrpc::exp::serde_json::Value::Array(vals)) => {
+                                #extract_positional
+                                if let Ok((#(#params),*)) = extract(vals) {
+                                    return Ok(Self::#item_fn_ident(state, #(#params),*));
+                                }
+                            },
+                            _ => {}
+                        }
+                        return Err(_ezjsonrpc::Error::invalid_params());
+                    };
 
-        new_methods.push(out);
-    }
+                    let boxed_method = _ezjsonrpc::BoxedMethod::from(rt);
 
-    let mut item_impl_cloned = item_impl.clone();
-
-    item_impl_cloned.items = new_methods;
+                    (#item_fn_ident_s, Box::new(boxed_method) as Box<std::any::Any>, std::marker::PhantomData::<Self>)
+                }
+            }
+        }
+    };
 
     let out = quote!{
-        #item_impl
-        const #dummy_const: () = {
-            extern crate ezjsonrpc as _ezjsonrpc;
-            #item_impl_cloned
-        };
+        #method
+        #params_fn
     };
 
     out.into()
 }
+
 
 #[proc_macro_hack]
 pub fn methods(item: TokenStream) -> TokenStream {
@@ -148,14 +145,18 @@ pub fn methods(item: TokenStream) -> TokenStream {
                 let mut last_seg = so_path.segments.last_mut().unwrap();
                 last_seg.value_mut().ident = Ident::new(
                     &format!(
-                        "jsonrpc_call_{}",
+                        "jsonrpc_params_for_{}",
                         last_seg.value().ident.to_string().trim_left_matches("r#").to_owned()
                     ),
                     Span::call_site()
                 );
             }
             let so_path = &so_path;
-            quote!(#so_path())
+            quote!({
+                extern crate ezjsonrpc as _ezjsonrpc;
+                let (name, any_box, phantom_data) = #so_path();
+                (name, _ezjsonrpc::utils::specify(any_box, phantom_data))
+            })
         })
         .collect::<Vec<_>>();
 
@@ -179,7 +180,7 @@ fn extract_positional(up_to: usize) -> proc_macro2::TokenStream {
     ts_rev.reverse();
 
     let exprs = (0..up_to)
-        .map(|i| quote!(_ezjsonrpc::exp::serde_json::from_value(vals.pop().unwrap())?))
+        .map(|_| quote!(_ezjsonrpc::exp::serde_json::from_value(vals.pop().unwrap())?))
         .collect::<Vec<_>>();
 
     quote!{

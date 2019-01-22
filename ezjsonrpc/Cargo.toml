@@ -3,6 +3,11 @@ authors = ["Jacob Brown <kardeiz@gmail.com>"]
 edition = "2018"
 name = "ezjsonrpc"
 version = "0.1.0"
+description = "JSONRPC 2.0 server/client with proc_macro helpers"
+keywords = ["jsonrpc", "json-rpc", "jsonrpc2", "rpc"]
+license = "MIT"
+readme = "../README.md"
+repository = "https://github.com/kardeiz/ezjsonrpc"
 
 [dependencies]
 futures = "0.1.25"

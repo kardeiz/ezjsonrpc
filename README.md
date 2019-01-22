@@ -1,3 +1,10 @@
+# ezjsonrpc
+
+Yet another JSON-RPC 2.0 server. Uses proc_macros to set up server methods.
+
+## Usage:
+
+```rust
 use ezjsonrpc::*;
 
 #[derive(Default)]
@@ -38,3 +45,7 @@ fn main() {
     tokio::run(res_fut);
 
 }
+```
+
+
+License: MIT
