@@ -1,4 +1,5 @@
 use ezjsonrpc::*;
+use std::sync::Arc;
 
 #[derive(Default)]
 pub struct State {

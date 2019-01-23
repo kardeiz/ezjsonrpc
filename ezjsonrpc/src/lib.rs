@@ -338,6 +338,7 @@ impl<T> Server<T> {
     }
 
     fn inner_call(&self, req: Request) -> impl Future<Item = Response, Error = ()> {
+
         let (opt_id, method, params) = match req {
             Request::Notification { method, params, .. } => (None, method, params),
             Request::HavingId { method, params, id, .. } => (Some(id), method, params)
