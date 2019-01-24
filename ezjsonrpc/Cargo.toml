@@ -2,7 +2,7 @@
 authors = ["Jacob Brown <kardeiz@gmail.com>"]
 edition = "2018"
 name = "ezjsonrpc"
-version = "0.1.0"
+version = "0.1.2"
 description = "JSONRPC 2.0 server/client with proc_macro helpers"
 keywords = ["jsonrpc", "json-rpc", "jsonrpc2", "rpc"]
 license = "MIT"
@@ -17,7 +17,7 @@ serde_derive = "1.0.84"
 
 [dependencies.ezjsonrpc-macros]
 path = "../ezjsonrpc-macros"
-version = "0.1.0"
+version = "0.1.2"
 
 [dependencies.serde_json]
 features = ["raw_value"]
