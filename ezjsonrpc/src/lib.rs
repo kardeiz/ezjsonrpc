@@ -98,54 +98,63 @@ impl<'de> Deserialize<'de> for Id {
     }
 }
 
+#[derive(Debug)]
+pub struct Request {
+    method: Cow<'static, str>, 
+    params: Option<Value>, 
+    id: Option<Id>
+}
+
+impl Request {
+
+    pub fn new() -> Self {
+        Request {
+            id: Some(Id::Null),
+            params: Default::default(),
+            method: Default::default()
+        }
+    }
+
+    pub fn notification() -> Self {
+        Request {
+            id: Default::default(),
+            params: Default::default(),
+            method: Default::default()
+        }
+    }
+
+    pub fn with_id<I: Into<Id>>(mut self, id: I) -> Self {
+        self.id = Some(id.into());
+        self
+    }
+
+    pub fn with_method<I: Into<Cow<'static, str>>>(mut self, method: I) -> Self {
+        self.method = method.into();
+        self
+    }
+
+    pub fn with_params<I: Into<Value>>(mut self, params: I) -> Self {
+        self.params = Some(params.into());
+        self
+    }
+}
+
+impl From<Request> for RequestObject {
+    fn from(t: Request) -> Self {
+        let Request { method, params, id } = t;
+        match id {
+            Some(id) => RequestObject::Request { jsonrpc: V2, method, params, id },
+            None => RequestObject::Notification { jsonrpc: V2, method, params },
+        }
+    }
+}
+
+
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
 pub enum RequestObject {
     Request { jsonrpc: V2, method: Cow<'static, str>, params: Option<Value>, id: Id },
     Notification { jsonrpc: V2, method: Cow<'static, str>, params: Option<Value> }
-}
-
-impl RequestObject {
-    pub fn with_id<I: Into<Id>>(self, id: I) -> Self {
-        match self {
-            RequestObject::Request { jsonrpc, method, params, .. } => {
-                RequestObject::Request { jsonrpc, method, params, id: id.into() }
-            }
-            RequestObject::Notification { jsonrpc, method, params } => {
-                RequestObject::Request { jsonrpc, method, params, id: id.into() }
-            }
-        }
-    }
-
-    pub fn with_method<I: Into<Cow<'static, str>>>(self, method: I) -> Self {
-        match self {
-            RequestObject::Request { jsonrpc, params, id, .. } => {
-                RequestObject::Request { jsonrpc, method: method.into(), params, id }
-            }
-            RequestObject::Notification { jsonrpc, params, .. } => {
-                RequestObject::Notification { jsonrpc, method: method.into(), params }
-            }
-        }
-    }
-
-    pub fn with_params<I: Into<Value>>(self, params: I) -> Self {
-        match self {
-            RequestObject::Request { jsonrpc, method, id, .. } => {
-                RequestObject::Request { jsonrpc, method, params: Some(params.into()), id }
-            }
-            RequestObject::Notification { jsonrpc, method, .. } => {
-                RequestObject::Notification { jsonrpc, method, params: Some(params.into()) }
-            }
-        }
-    }
-
-    pub fn request() -> Self {
-        RequestObject::Request { jsonrpc: V2, method: "".into(), params: None, id: Id::Null }
-    }
-
-    pub fn notification() -> Self {
-        RequestObject::Notification { jsonrpc: V2, method: "".into(), params: None }
-    }
 }
 
 #[derive(Serialize, Deserialize, Default, Debug)]
@@ -240,10 +249,10 @@ impl From<Vec<Response>> for ResponseObjects {
 }
 
 pub trait Service {
-    fn call(&self, req: RequestObject) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>;
-    fn batch(
+    fn call<I: Into<RequestObject> + 'static>(&self, req: I) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>;
+    fn batch<I: Into<RequestObject> + 'static>(
         &self,
-        requests: Vec<RequestObject>
+        requests: Vec<I>
     ) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>;
     fn request_from_bytes(
         &self,
@@ -272,8 +281,8 @@ where S: Borrow<T>
         Server { state, method_matcher }
     }
 
-    fn inner_call(&self, req: RequestObject) -> impl Future<Item = Response, Error = ()> {
-        let (opt_id, method, params) = match req {
+    fn inner_call<I: Into<RequestObject>>(&self, req: I) -> impl Future<Item = Response, Error = ()> {
+        let (opt_id, method, params) = match req.into() {
             RequestObject::Notification { method, params, .. } => (None, method, params),
             RequestObject::Request { method, params, id, .. } => (Some(id), method, params)
         };
@@ -290,9 +299,9 @@ where S: Borrow<T>
         }
     }
 
-    fn inner_batch(
+    fn inner_batch<I: Into<RequestObject>>(
         &self,
-        requests: Vec<RequestObject>
+        requests: Vec<I>
     ) -> impl Future<Item = Vec<Response>, Error = ()>
     {
         use futures::stream::Stream;
@@ -304,13 +313,13 @@ where S: Borrow<T>
 impl<T: 'static, S: 'static> Service for Server<T, S>
 where S: Borrow<T>
 {
-    fn call(&self, req: RequestObject) -> Box<Future<Item = ResponseObjects, Error = ()> + Send> {
+    fn call<I: Into<RequestObject> + 'static>(&self, req: I) -> Box<Future<Item = ResponseObjects, Error = ()> + Send> {
         Box::new(self.inner_call(req).map(ResponseObjects::from))
     }
 
-    fn batch(
+    fn batch<I: Into<RequestObject> + 'static>(
         &self,
-        requests: Vec<RequestObject>
+        requests: Vec<I>
     ) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>
     {
         Box::new(self.inner_batch(requests).map(ResponseObjects::from))

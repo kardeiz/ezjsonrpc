@@ -24,14 +24,19 @@ impl State {
 fn main() {
     use futures::Future;
 
+    // let json = r#"{ "id": null, "method": "foo", "jsonrpc": "2.0" }"#;
+
+    // println!("{:?}", serde_json::from_str::<Request>(json).unwrap());
+
+
     let server =
         Server::new(State::default()).with_methods(methods![State::unreliable_add, State::count]);
 
-    let req_1 = RequestObject::notification().with_method("count");
-    let req_2 = RequestObject::request().with_id(1).with_method("count");
+    let req_1 = Request::notification().with_method("count");
+    let req_2 = Request::new().with_id(1).with_method("count");
     let req_3 =
-        RequestObject::request().with_id(2).with_method("unreliable-add").with_params(vec![1, 2]);
-    let req_4 = RequestObject::request()
+        Request::new().with_id(2).with_method("unreliable-add").with_params(vec![1, 2]);
+    let req_4 = Request::new()
         .with_id(3)
         .with_method("unreliable-add")
         .with_params(serde_json::json!{{ "a": 20, "b": 30}});

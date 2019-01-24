@@ -86,9 +86,9 @@ dependencies = [
 
 [[package]]
 name = "ezjsonrpc"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
- "ezjsonrpc-macros 0.1.0",
+ "ezjsonrpc-macros 0.1.2",
  "futures 0.1.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro-hack 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.85 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -99,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "ezjsonrpc-macros"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "proc-macro-hack 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro2 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)",
