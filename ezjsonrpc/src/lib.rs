@@ -5,11 +5,11 @@ extern crate serde_derive;
 
 pub use ezjsonrpc_macros::*;
 
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::{Borrow, Cow};
 
 use futures::{
     future::{ok as future_ok, Either as EitherFuture},
-    Future, IntoFuture
+    Future
 };
 
 use proc_macro_hack::proc_macro_hack;
@@ -100,72 +100,51 @@ impl<'de> Deserialize<'de> for Id {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(untagged)]
-pub enum Request {
-    HavingId { jsonrpc: V2, method: Cow<'static, str>, params: Option<Value>, id: Id },
+pub enum RequestObject {
+    Request { jsonrpc: V2, method: Cow<'static, str>, params: Option<Value>, id: Id },
     Notification { jsonrpc: V2, method: Cow<'static, str>, params: Option<Value> }
 }
 
-impl Request {
-    pub fn is_notification(&self) -> bool {
-        match self {
-            Request::HavingId { .. } => false,
-            Request::Notification { .. } => true
-        }
-    }
-
-    pub fn method(&self) -> &str {
-        match self {
-            Request::HavingId { ref method, .. } => method,
-            Request::Notification { ref method, .. } => method
-        }
-    }
-
-    pub fn params_mut(&mut self) -> &mut Option<Value> {
-        match self {
-            Request::HavingId { ref mut params, .. } => params,
-            Request::Notification { ref mut params, .. } => params
-        }
-    }
-
+impl RequestObject {
     pub fn with_id<I: Into<Id>>(self, id: I) -> Self {
         match self {
-            Request::HavingId { jsonrpc, method, params, .. } => {
-                Request::HavingId { jsonrpc, method, params, id: id.into() }
+            RequestObject::Request { jsonrpc, method, params, .. } => {
+                RequestObject::Request { jsonrpc, method, params, id: id.into() }
             }
-            Request::Notification { jsonrpc, method, params } => {
-                Request::HavingId { jsonrpc, method, params, id: id.into() }
+            RequestObject::Notification { jsonrpc, method, params } => {
+                RequestObject::Request { jsonrpc, method, params, id: id.into() }
             }
         }
     }
 
     pub fn with_method<I: Into<Cow<'static, str>>>(self, method: I) -> Self {
         match self {
-            Request::HavingId { jsonrpc, params, id, .. } => {
-                Request::HavingId { jsonrpc, method: method.into(), params, id }
+            RequestObject::Request { jsonrpc, params, id, .. } => {
+                RequestObject::Request { jsonrpc, method: method.into(), params, id }
             }
-            Request::Notification { jsonrpc, params, .. } => {
-                Request::Notification { jsonrpc, method: method.into(), params }
+            RequestObject::Notification { jsonrpc, params, .. } => {
+                RequestObject::Notification { jsonrpc, method: method.into(), params }
             }
         }
     }
 
     pub fn with_params<I: Into<Value>>(self, params: I) -> Self {
         match self {
-            Request::HavingId { jsonrpc, method, id, .. } => {
-                Request::HavingId { jsonrpc, method, params: Some(params.into()), id }
+            RequestObject::Request { jsonrpc, method, id, .. } => {
+                RequestObject::Request { jsonrpc, method, params: Some(params.into()), id }
             }
-            Request::Notification { jsonrpc, method, .. } => {
-                Request::Notification { jsonrpc, method, params: Some(params.into()) }
+            RequestObject::Notification { jsonrpc, method, .. } => {
+                RequestObject::Notification { jsonrpc, method, params: Some(params.into()) }
             }
         }
     }
 
-    pub fn having_id() -> Self {
-        Request::HavingId { jsonrpc: V2, method: "".into(), params: None, id: Id::Null }
+    pub fn request() -> Self {
+        RequestObject::Request { jsonrpc: V2, method: "".into(), params: None, id: Id::Null }
     }
 
     pub fn notification() -> Self {
-        Request::Notification { jsonrpc: V2, method: "".into(), params: None }
+        RequestObject::Notification { jsonrpc: V2, method: "".into(), params: None }
     }
 }
 
@@ -220,56 +199,6 @@ impl Response {
     }
 }
 
-type MethodLike<T> =
-    Box<Fn(&T, Option<Value>) -> Box<Future<Item = Value, Error = Error> + Send> + Send + Sync>;
-
-pub struct BoxedMethod<T>(pub MethodLike<T>);
-
-impl<H, I, S, E, T> From<H> for BoxedMethod<T>
-where
-    I: IntoFuture<Item = S, Error = E> + 'static + Send,
-    I::Future: 'static + Send,
-    S: serde::Serialize,
-    E: Into<Error>,
-    H: Fn(&T, Option<Value>) -> Result<I, Error> + Sync + Send + 'static
-{
-    fn from(t: H) -> Self {
-        BoxedMethod(Box::new(
-            move |state: &T,
-                  params: Option<Value>|
-                  -> Box<Future<Item = Value, Error = Error> + Send> {
-                let rt = t(state, params).into_future().and_then(|s| {
-                    s.into_future().map_err(|e| e.into()).and_then(|r| {
-                        serde_json::to_value(r)
-                            .into_future()
-                            .map_err(|e| Error::from(e.to_string()))
-                    })
-                });
-                Box::new(rt)
-            }
-        ))
-    }
-}
-
-impl<T> Method<T> for BoxedMethod<T> {
-    fn call(
-        &self,
-        state: &T,
-        params: Option<Value>
-    ) -> Box<Future<Item = Value, Error = Error> + Send>
-    {
-        (&self.0)(state, params)
-    }
-}
-
-pub trait Method<T> {
-    fn call(
-        &self,
-        state: &T,
-        params: Option<Value>
-    ) -> Box<Future<Item = Value, Error = Error> + Send>;
-}
-
 #[derive(Deserialize)]
 #[serde(untagged)]
 pub enum OneOrManyValues {
@@ -311,10 +240,10 @@ impl From<Vec<Response>> for ResponseObjects {
 }
 
 pub trait Service {
-    fn call(&self, req: Request) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>;
+    fn call(&self, req: RequestObject) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>;
     fn batch(
         &self,
-        requests: Vec<Request>
+        requests: Vec<RequestObject>
     ) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>;
     fn request_from_bytes(
         &self,
@@ -322,30 +251,35 @@ pub trait Service {
     ) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>;
 }
 
-pub struct Server<T> {
-    state: T,
-    pub methods: HashMap<String, Box<Method<T>>>
+type Method<T> = fn(&T, Option<Value>) -> Box<Future<Item = Value, Error = Error> + Send>;
+type MethodMatcher<T> = fn(&str) -> Option<Method<T>>;
+
+pub struct Server<T, S> {
+    state: S,
+    method_matcher: MethodMatcher<T>
 }
 
-impl<T> Server<T> {
-    pub fn new(state: T) -> Self { Server { state, methods: HashMap::new() } }
+impl<T, S> Server<T, S>
+where S: Borrow<T>
+{
+    fn empty_matcher(_: &str) -> Option<Method<T>> { None }
 
-    pub fn with_methods(mut self, named_methods: Vec<(&'static str, Box<Method<T>>)>) -> Self {
-        for (name, method) in named_methods {
-            self.methods.insert(name.into(), method);
-        }
-        self
+    pub fn new(state: S) -> Self { Server { state, method_matcher: Self::empty_matcher } }
+
+    pub fn with_methods(self, method_matcher: MethodMatcher<T>) -> Self {
+        let Server { state, .. } = self;
+
+        Server { state, method_matcher }
     }
 
-    fn inner_call(&self, req: Request) -> impl Future<Item = Response, Error = ()> {
-
+    fn inner_call(&self, req: RequestObject) -> impl Future<Item = Response, Error = ()> {
         let (opt_id, method, params) = match req {
-            Request::Notification { method, params, .. } => (None, method, params),
-            Request::HavingId { method, params, id, .. } => (Some(id), method, params)
+            RequestObject::Notification { method, params, .. } => (None, method, params),
+            RequestObject::Request { method, params, id, .. } => (Some(id), method, params)
         };
 
-        if let Some(method) = self.methods.get(method.as_ref()) {
-            let rt = method.call(&self.state, params).then(|fut| match fut {
+        if let Some(method) = (self.method_matcher)(method.as_ref()) {
+            let rt = method(self.state.borrow(), params).then(|fut| match fut {
                 Ok(val) => future_ok(Response::result(val, opt_id)),
                 Err(e) => future_ok(Response::error(e, opt_id))
             });
@@ -358,24 +292,25 @@ impl<T> Server<T> {
 
     fn inner_batch(
         &self,
-        requests: Vec<Request>
-    ) -> impl Future<Item = Vec<Response>, Error = ()> 
+        requests: Vec<RequestObject>
+    ) -> impl Future<Item = Vec<Response>, Error = ()>
     {
         use futures::stream::Stream;
-        futures::stream::futures_unordered(requests.into_iter().map(|r| self.inner_call(r))).collect()
+        futures::stream::futures_unordered(requests.into_iter().map(|r| self.inner_call(r)))
+            .collect()
     }
-
 }
 
-
-impl<T: 'static> Service for Server<T> {
-    fn call(&self, req: Request) -> Box<Future<Item = ResponseObjects, Error = ()> + Send> {
+impl<T: 'static, S: 'static> Service for Server<T, S>
+where S: Borrow<T>
+{
+    fn call(&self, req: RequestObject) -> Box<Future<Item = ResponseObjects, Error = ()> + Send> {
         Box::new(self.inner_call(req).map(ResponseObjects::from))
     }
 
     fn batch(
         &self,
-        requests: Vec<Request>
+        requests: Vec<RequestObject>
     ) -> Box<Future<Item = ResponseObjects, Error = ()> + Send>
     {
         Box::new(self.inner_batch(requests).map(ResponseObjects::from))
@@ -389,7 +324,7 @@ impl<T: 'static> Service for Server<T> {
         if let Ok(mr) = serde_json::from_slice::<OneOrManyValues>(bytes) {
             match mr {
                 OneOrManyValues::One(val) => {
-                    return Box::new(match serde_json::from_value::<Request>(val) {
+                    return Box::new(match serde_json::from_value::<RequestObject>(val) {
                         Ok(rn) => EitherFuture::A(self.call(rn)),
                         Err(_) => EitherFuture::B(future_ok(
                             Response::error(Error::invalid_request(), Some(Id::Null)).into()
@@ -405,8 +340,10 @@ impl<T: 'static> Service for Server<T> {
 
                     let (okays, errs) = vals
                         .into_iter()
-                        .map(serde_json::from_value::<Request>)
-                        .partition::<Vec<Result<Request, serde_json::Error>>, _>(|x| x.is_ok());
+                        .map(serde_json::from_value::<RequestObject>)
+                        .partition::<Vec<Result<RequestObject, serde_json::Error>>, _>(|x| {
+                            x.is_ok()
+                        });
 
                     let errs = errs
                         .into_iter()
@@ -414,11 +351,12 @@ impl<T: 'static> Service for Server<T> {
                         .collect::<Vec<_>>();
 
                     return Box::new(
-                        self.inner_batch(okays.into_iter().flat_map(|x| x).collect())
-                            .map(|mut rs| {
+                        self.inner_batch(okays.into_iter().flat_map(|x| x).collect()).map(
+                            |mut rs| {
                                 rs.extend(errs);
                                 rs.into()
-                            })
+                            }
+                        )
                     );
                 }
             }
@@ -429,10 +367,26 @@ impl<T: 'static> Service for Server<T> {
 }
 
 pub mod utils {
-    use std::{any::Any, marker::PhantomData};
 
-    pub fn specify<T: 'static>(any_box: Box<Any>, _: PhantomData<T>) -> Box<super::Method<T>> {
-        any_box.downcast::<super::BoxedMethod<T>>().unwrap() as Box<super::Method<T>>
+    use super::Error;
+    use futures::{Future, IntoFuture};
+
+    pub fn finish_callable<I, S, E>(
+        i: I
+    ) -> Box<Future<Item = serde_json::Value, Error = Error> + Send>
+    where
+        I: IntoFuture<Item = S, Error = E> + 'static + Send,
+        I::Future: 'static + Send,
+        S: serde::Serialize,
+        E: Into<Error> {
+        let rt = i.into_future().map_err(|e| e.into()).and_then(|r| {
+            serde_json::to_value(r).into_future().map_err(|e| Error {
+                code: 1,
+                message: e.to_string(),
+                data: None
+            })
+        });
+        Box::new(rt)
     }
 }
 
